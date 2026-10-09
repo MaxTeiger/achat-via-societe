@@ -121,6 +121,8 @@ summary{cursor:pointer;font-weight:600}
 
   <p class="verdict" id="verdict"></p>
 
+  <label class="c"><input id="withIS" type="checkbox" checked> Inclure l'IS dans le graphique</label>
+
   <div class="routes" id="routes"></div>
   <div class="legend" id="legend"></div>
 
@@ -224,7 +226,11 @@ const COLORS = {obj:['var(--co)','Objet HT'], tvaP:['var(--tvac)','TVA payée (n
 
 function render(){
   const r = compute();
-  const routes = [r.A, r.B, r.C];
+  const withIS = $('withIS').checked;
+  // sans IS : on retire le segment IS de chaque barre et on ajuste le total
+  const routes = [r.A, r.B, r.C].map(x => withIS ? x : {...x,
+    fact: x.fact - x.seg.filter(sg => sg.k === 'is').reduce((a,sg) => a + sg.v, 0),
+    seg: x.seg.filter(sg => sg.k !== 'is')});
   const max = Math.max(...routes.map(x=>x.fact), 1);
 
   $('routes').innerHTML = routes.map((x,i) => {
@@ -236,11 +242,11 @@ function render(){
       <div class="bar" role="img" aria-label="${x.name} : ${eur(x.fact)} à facturer">${segs}</div></div>`;
   }).join('');
 
-  $('legend').innerHTML = ['obj','tvaP','pfu','is','ir','sal','pat'].map(k =>
+  $('legend').innerHTML = ['obj','tvaP','pfu','is','ir','sal','pat'].filter(k => withIS || k !== 'is').map(k =>
     `<span><i style="background:${COLORS[k][0]}"></i>${COLORS[k][1]}</span>`).join('');
 
   const saveB = r.B.fact - r.A.fact, saveC = r.C.fact - r.A.fact;
-  $('verdict').innerHTML = `Pour un objet à <b>${eur(r.ttc)}</b> TTC, il faut facturer <b>${eur(r.A.fact)}</b> HT s'il est payé par la société, contre <b>${eur(r.B.fact)}</b> via dividendes et <b>${eur(r.C.fact)}</b> via salaire.`;
+  $('verdict').innerHTML = `Pour un objet à <b>${eur(r.ttc)}</b> TTC, il faut facturer <b>${eur(routes[0].fact)}</b> HT s'il est payé par la société, contre <b>${eur(routes[1].fact)}</b> via dividendes et <b>${eur(routes[2].fact)}</b> via salaire${withIS ? '' : ' (hors IS)'}.`;
 
   const metrics = [
     [eur(r.A.cash), 'Coût net pour la trésorerie de la société', ''],
