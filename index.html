@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Achat perso ou via la SASU — calculateur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F5; --panel:#FFFFFF; --ink:#1C2430; --muted:#5B6676; --line:#D5DBE3;
+  --co:#2F5BEA; --tax:#C98A1B; --soc:#9B5DB5; --ir:#C2453B; --good:#2E8B6A; --obj:#1C2430;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141922; --panel:#1C2330; --ink:#E7ECF3; --muted:#9AA6B6; --line:#2E3747;
+    --co:#6E8DF5; --tax:#E0A93E; --soc:#B884CF; --ir:#E2766C; --good:#4FB38D; --obj:#E7ECF3;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141922; --panel:#1C2330; --ink:#E7ECF3; --muted:#9AA6B6; --line:#2E3747;
+  --co:#6E8DF5; --tax:#E0A93E; --soc:#B884CF; --ir:#E2766C; --good:#4FB38D; --obj:#E7ECF3;
+}
+:root{--sal:#7A8B99; --pat:#1F9AA8; --tvac:#7CC3EF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--sal:#8F969D; --pat:#45C1CF; --tvac:#8FD0F8}}
+:root[data-theme="dark"]{--sal:#8F969D; --pat:#45C1CF; --tvac:#8FD0F8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:330px 1fr;gap:28px;align-items:start}
+@media (max-width:860px){.wrap{grid-template-columns:1fr}}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+@media (max-width:860px){aside{position:static}}
+h1{font-size:26px;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 22px;max-width:70ch}
+h2{font-size:17px;margin:0 0 12px;font-weight:600}
+fieldset{border:0;padding:0;margin:0 0 18px}
+legend{font-weight:600;font-size:14px;margin-bottom:8px;padding:0}
+label.f{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;font-size:14px;margin:6px 0;color:var(--ink)}
+label.f small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
+input[type=number],select{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font:inherit;text-align:right}
+label.c{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin:8px 0}
+input:focus-visible,select:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid var(--co);outline-offset:2px}
+.verdict{font-size:22px;line-height:1.35;font-weight:500;margin:0 0 20px;max-width:60ch}
+.verdict b{font-weight:700}
+.routes{display:grid;gap:18px;margin-bottom:26px}
+.route .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.route .name{font-weight:600}
+.route .tot{font-size:20px;font-weight:700}
+.bar{display:flex;height:34px;border-radius:6px;overflow:hidden;background:var(--line)}
+.bar span{display:block;height:100%;transition:width .35s ease}
+@media (prefers-reduced-motion: reduce){.bar span{transition:none}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin:4px 0 22px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:26px}
+.m{background:var(--panel);padding:14px 16px}
+.m .v{font-size:20px;font-weight:700}
+.m .k{font-size:13px;color:var(--muted)}
+.m .v.good{color:var(--good)}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;color:var(--muted)}
+tr.sum td{font-weight:700}
+details{border-top:1px solid var(--line);padding:10px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-weight:600}
+.steps{margin:10px 0 0;padding-left:0;list-style:none;font-size:14px}
+.steps li{display:flex;justify-content:space-between;gap:16px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.steps li span:first-child{color:var(--muted)}
+.steps li.r{font-weight:700;border-bottom:0}
+.steps li.r span:first-child{color:var(--ink)}
+.notes{font-size:14px;color:var(--muted);max-width:75ch}
+.notes p{margin:0 0 10px}
+.notes strong{color:var(--ink)}
+.warn{color:var(--tax);font-size:13px;margin-top:6px;min-height:1em}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside aria-label="Paramètres">
+  <h2>Paramètres</h2>
+  <fieldset>
+    <legend>L'achat</legend>
+    <label class="f">Prix TTC (€)<input id="ttc" type="number" value="1000" min="0" step="10"></label>
+    <label class="f">Taux de TVA (%)<input id="tva" type="number" value="20" min="0" step="0.1"></label>
+    <label class="c"><input id="assuj" type="checkbox" checked> La société récupère la TVA (pas en franchise)</label>
+    <label class="f"><span>Durée d'amortissement (ans)<small>Utilisée si prix HT &gt; 500 €</small></span><input id="amort" type="number" value="3" min="1" step="1"></label>
+  </fieldset>
+  <fieldset>
+    <legend>La société (exercice en cours)</legend>
+    <label class="f">CA HT annuel (€)<input id="ca" type="number" value="140000" min="0" step="1000"></label>
+    <label class="f">Autres charges déductibles (€)<input id="ch" type="number" value="15000" min="0" step="500"></label>
+    <label class="f"><span>Rémunération déjà versée<small>Coût total employeur</small></span><input id="remu" type="number" value="0" min="0" step="500"></label>
+    <label class="c"><input id="pme" type="checkbox" checked> Éligible au taux réduit d'IS (15 % jusqu'à 42 500 €)</label>
+    <label class="f">TJM HT (€)<input id="tjm" type="number" value="650" min="1" step="10"></label>
+  </fieldset>
+  <fieldset>
+    <legend>Vous</legend>
+    <label class="f">TMI (%)
+      <select id="tmi"><option value="0">0</option><option value="11">11</option><option value="30" selected>30</option><option value="41">41</option><option value="45">45</option></select>
+    </label>
+    <label class="f">Flat tax dividendes (%)<input id="pfu" type="number" value="31.4" min="0" step="0.1"></label>
+    <label class="c"><input id="abat" type="checkbox" checked> Abattement 10 % frais pro sur salaire</label>
+  </fieldset>
+  <fieldset>
+    <legend>Charges sociales président SASU</legend>
+    <label class="f"><span>Salariales (% du brut)<small>Approximation, CSG/CRDS incluses</small></span><input id="sal" type="number" value="22" min="0" step="0.5"></label>
+    <label class="f"><span>Patronales (% du brut)<small>Approximation, sans chômage</small></span><input id="pat" type="number" value="43" min="0" step="0.5"></label>
+  </fieldset>
+</aside>
+
+<main>
+  <h1>Ce que coûte vraiment un achat, selon qui paie</h1>
+  <p class="lede">Même objet, trois façons de le payer : via la société en frais, ou personnellement avec de l'argent sorti en dividendes ou en salaire. La comparaison se fait en chiffre d'affaires à facturer pour financer l'achat, à trésorerie de la société inchangée.</p>
+
+  <p class="verdict" id="verdict"></p>
+
+  <div class="routes" id="routes"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="grid" id="metrics"></div>
+
+  <section class="card">
+    <h2>Tableau comparatif</h2>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>Le calcul, étape par étape</h2>
+    <div id="detail"></div>
+  </section>
+
+  <section class="card notes">
+    <h2 style="color:var(--ink)">Hypothèses et limites</h2>
+    <p><strong>Taux 2026 utilisés par défaut :</strong> IS 15 % jusqu'à 42 500 € de bénéfice puis 25 % ; flat tax 31,4 % (12,8 % IR + 18,6 % prélèvements sociaux, LFSS 2026). Les taux de charges président SASU sont des moyennes approximatives : ajustez-les avec une simulation URSSAF ou votre comptable.</p>
+    <p><strong>Condition de base :</strong> la dépense doit être engagée dans l'intérêt de la société, facturée à son nom et justifiable. Un bien à usage mixte ou personnel payé par la société peut être requalifié (avantage en nature soumis à charges et IR, voire abus de biens sociaux), ce qui annule tout le gain affiché ici.</p>
+    <p><strong>Amortissement :</strong> au-delà de 500 € HT, le bien s'amortit en principe sur sa durée d'usage. L'économie d'IS totale est la même, mais étalée ; le calculateur suppose un bénéfice identique chaque année et ignore le prorata temporis.</p>
+    <p><strong>TVA :</strong> pas de récupération si la société est en franchise en base (seuil 2026 de 37 500 € de CA pour les services) ou pour certains biens exclus du droit à déduction.</p>
+    <p><strong>Salaire :</strong> l'IR est calculé au taux marginal sur le net imposable (net + CSG non déductible et CRDS). Un salaire ouvre aussi des droits (retraite, prévoyance) que le calcul ne valorise pas, et il n'est pas soumis à l'IS : c'est une charge déductible.</p>
+    <p>Outil d'estimation, pas un conseil fiscal.</p>
+  </section>
+</main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const eur = v => (isFinite(v)? v : 0).toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const pct = v => (isFinite(v)? v : 0).toLocaleString('fr-FR',{maximumFractionDigits:1}) + ' %';
+const num = id => { const v = parseFloat($(id).value); return isFinite(v)? v : 0; };
+
+function IS(x, pme){
+  if (x <= 0) return 0;
+  if (!pme) return x * 0.25;
+  return Math.min(x, 42500) * 0.15 + Math.max(0, x - 42500) * 0.25;
+}
+// extra pre-IS revenue X such that X - (IS(P0+X)-IS(P0)) = target (company cash unchanged)
+function grossUp(target, P0, pme){
+  let lo = 0, hi = target * 3 + 10;
+  for (let i=0;i<80;i++){
+    const mid = (lo+hi)/2;
+    const net = mid - (IS(P0+mid,pme) - IS(P0,pme));
+    if (net < target) lo = mid; else hi = mid;
+  }
+  return (lo+hi)/2;
+}
+
+function compute(){
+  const ttc=num('ttc'), tva=num('tva')/100, assuj=$('assuj').checked, n=Math.max(1,Math.round(num('amort')));
+  const ca=num('ca'), ch=num('ch'), remu=num('remu'), pme=$('pme').checked, tjm=Math.max(1,num('tjm'));
+  const tmi=num('tmi')/100, pfu=num('pfu')/100, abat=$('abat').checked;
+  const s=num('sal')/100, p=num('pat')/100;
+  const P0 = ca - ch - remu;
+  const isP0 = IS(P0,pme);
+  const tmIS = P0 > 42500 || !pme ? 25 : (P0 > 0 ? 15 : 0);
+
+  // --- Route A : achat par la société
+  const ht = ttc / (1 + tva);
+  const tvaRec = assuj ? ttc - ht : 0;
+  const deductible = assuj ? ht : ttc;
+  const amortized = ht > 500;
+  const d1 = amortized ? deductible / n : deductible;
+  const isSave1 = isP0 - IS(P0 - d1, pme);
+  const isSaveTot = amortized ? (isP0 - IS(P0 - deductible/n, pme)) * n : isSave1;
+  const A_cash = ttc - tvaRec - isSaveTot;
+  const A_fact = deductible;               // CA HT supplémentaire qui finance la dépense (IS neutre)
+  const A = {name:'Payé par la société (en frais)', fact:A_fact, cash:A_cash,
+    seg: assuj ? [{k:'obj',v:ht}] : [{k:'obj',v:ht},{k:'tvaP',v:ttc-ht}], color:'var(--co)'};
+
+  // --- Route B : dividendes puis achat perso
+  const G = ttc / (1 - pfu);
+  const pfuAmt = G - ttc;
+  const B_fact = grossUp(G, P0, pme);
+  const B_is = B_fact - G;
+  const B = {name:'Payé perso, financé par dividendes', fact:B_fact, cash:G,
+    seg:[{k:'obj',v:ht},{k:'tvaP',v:ttc-ht},{k:'pfu',v:pfuAmt},{k:'is',v:B_is}]};
+
+  // --- Route C : salaire puis achat perso
+  const k = abat ? 0.9 : 1;
+  const nonDed = 0.029 * 0.9825;           // CSG non déductible + CRDS, assiette 98,25 %
+  const perBrut = (1 - s) - tmi * k * ((1 - s) + nonDed);
+  const brut = ttc / perBrut;
+  const net = brut * (1 - s);
+  const netImp = net + nonDed * brut;
+  const ir = tmi * k * netImp;
+  const chSal = brut * s, chPat = brut * p, cost = brut * (1 + p);
+  const C_isSave = isP0 - IS(P0 - cost, pme);
+  const C_cash = cost - C_isSave;
+  const C = {name:'Payé perso, financé par salaire', fact:cost, cash:C_cash,
+    seg:[{k:'obj',v:ht},{k:'tvaP',v:ttc-ht},{k:'ir',v:ir},{k:'sal',v:chSal},{k:'pat',v:chPat}]};
+
+  return {ttc,ht,tvaRec,deductible,amortized,n,d1,isSave1,isSaveTot,P0,isP0,tmIS,tjm,tmi,pfu,assuj,
+    A,B,C,G,pfuAmt,B_is,brut,net,netImp,ir,chSal,chPat,cost,C_isSave,s,p,k};
+}
+
+const COLORS = {obj:['var(--co)','Objet HT'], tvaP:['var(--tvac)','TVA payée (non récupérée)'],
+  pfu:['var(--tax)','Flat tax'], is:['var(--soc)','IS sur le bénéfice distribué'],
+  ir:['var(--ir)','Impôt sur le revenu'], sal:['var(--sal)','Charges salariales'], pat:['var(--pat)','Charges patronales']};
+
+function render(){
+  const r = compute();
+  const routes = [r.A, r.B, r.C];
+  const max = Math.max(...routes.map(x=>x.fact), 1);
+
+  $('routes').innerHTML = routes.map((x,i) => {
+    const segs = x.seg.map(sg => {
+      const key = sg.k;
+      return `<span title="${COLORS[key][1]} : ${eur(sg.v)}" style="width:${(sg.v/max*100).toFixed(2)}%;background:${COLORS[key][0]}"></span>`;
+    }).join('');
+    return `<div class="route"><div class="top"><span class="name">${x.name}</span><span class="tot">${eur(x.fact)}</span></div>
+      <div class="bar" role="img" aria-label="${x.name} : ${eur(x.fact)} à facturer">${segs}</div></div>`;
+  }).join('');
+
+  $('legend').innerHTML = ['obj','tvaP','pfu','is','ir','sal','pat'].map(k =>
+    `<span><i style="background:${COLORS[k][0]}"></i>${COLORS[k][1]}</span>`).join('');
+
+  const saveB = r.B.fact - r.A.fact, saveC = r.C.fact - r.A.fact;
+  $('verdict').innerHTML = `Pour un objet à <b>${eur(r.ttc)}</b> TTC, il faut facturer <b>${eur(r.A.fact)}</b> HT s'il est payé par la société, contre <b>${eur(r.B.fact)}</b> via dividendes et <b>${eur(r.C.fact)}</b> via salaire.`;
+
+  const metrics = [
+    [eur(r.A.cash), 'Coût net pour la trésorerie de la société', ''],
+    [pct(r.A.cash / r.ttc * 100), 'Coût effectif en % du prix TTC', ''],
+    [eur(r.tvaRec), 'TVA récupérée', ''],
+    [eur(r.isSaveTot), r.amortized ? `Économie d'IS totale (dont ${eur(r.isSave1)} la 1re année)` : "Économie d'IS (immédiate)", ''],
+    [eur(saveB), `Économie vs dividendes (${pct(saveB / r.B.fact * 100)})`, 'good'],
+    [eur(saveC), `Économie vs salaire (${pct(saveC / r.C.fact * 100)})`, 'good'],
+    [(r.B.fact / r.A.fact).toLocaleString('fr-FR',{maximumFractionDigits:2}) + ' ×', 'Multiplicateur dividendes / société', ''],
+    [(r.A.fact / r.tjm).toLocaleString('fr-FR',{maximumFractionDigits:2}) + ' j', `Jours facturés via société (vs ${(r.B.fact/r.tjm).toLocaleString('fr-FR',{maximumFractionDigits:2})} j dividendes)`, ''],
+    [r.tmIS + ' %', `Taux marginal d'IS (bénéfice avant achat ${eur(r.P0)})`, ''],
+  ];
+  $('metrics').innerHTML = metrics.map(([v,k,c]) => `<div class="m"><div class="v ${c}">${v}</div><div class="k">${k}</div></div>`).join('');
+
+  $('tbl').innerHTML = `<thead><tr><th></th><th>Société</th><th>Dividendes</th><th>Salaire</th></tr></thead><tbody>
+    <tr><td>Ce que vous recevez</td><td>l'objet</td><td>l'objet</td><td>l'objet</td></tr>
+    <tr><td>CA HT à facturer</td><td>${eur(r.A.fact)}</td><td>${eur(r.B.fact)}</td><td>${eur(r.C.fact)}</td></tr>
+    <tr><td>Sortie de trésorerie société, nette d'IS</td><td>${eur(r.A.cash)}</td><td>${eur(r.B.cash)}</td><td>${eur(r.C.cash)}</td></tr>
+    <tr><td>Jours de mission équivalents</td><td>${(r.A.fact/r.tjm).toFixed(2)}</td><td>${(r.B.fact/r.tjm).toFixed(2)}</td><td>${(r.C.fact/r.tjm).toFixed(2)}</td></tr>
+    <tr class="sum"><td>Prélèvements totaux</td><td>${eur(r.A.fact - r.A.fact)}</td><td>${eur(r.B.fact - r.ttc)}</td><td>${eur(r.C.fact - r.ttc)}</td></tr>
+  </tbody>`;
+
+  const li = (a,b,cls='') => `<li class="${cls}"><span>${a}</span><span>${b}</span></li>`;
+  $('detail').innerHTML = `
+  <details open><summary>Payé par la société</summary><ul class="steps">
+    ${li('Prix TTC', eur(r.ttc))}
+    ${li(r.assuj ? 'TVA récupérée' : 'TVA non récupérée (franchise)', '− ' + eur(r.tvaRec))}
+    ${li('Charge déductible', eur(r.deductible))}
+    ${li(r.amortized ? `Amortie sur ${r.n} ans, soit par an` : 'Passée en charge immédiatement (≤ 500 € HT)', eur(r.d1))}
+    ${li(r.amortized ? `Économie d'IS par an × ${r.n}` : "Économie d'IS", '− ' + eur(r.isSaveTot))}
+    ${li('Coût net pour la trésorerie', eur(r.A.cash), 'r')}
+    ${li('CA HT à facturer pour la financer (IS neutre)', eur(r.A.fact), 'r')}
+  </ul></details>
+  <details><summary>Payé perso, financé par dividendes</summary><ul class="steps">
+    ${li('Net à percevoir', eur(r.ttc))}
+    ${li(`Dividende brut = net ÷ (1 − ${pct(r.pfu*100)})`, eur(r.G))}
+    ${li('Dont flat tax', eur(r.pfuAmt))}
+    ${li('Bénéfice avant IS nécessaire', eur(r.B.fact))}
+    ${li('Dont IS', eur(r.B_is))}
+    ${li('CA HT à facturer', eur(r.B.fact), 'r')}
+  </ul></details>
+  <details><summary>Payé perso, financé par salaire</summary><ul class="steps">
+    ${li('Net après IR à percevoir', eur(r.ttc))}
+    ${li('Salaire brut nécessaire', eur(r.brut))}
+    ${li(`Charges salariales (${pct(r.s*100)})`, eur(r.chSal))}
+    ${li('Net avant IR', eur(r.net))}
+    ${li('Net imposable (+ CSG non déductible et CRDS)', eur(r.netImp))}
+    ${li(`IR au TMI ${pct(r.tmi*100)}${r.k<1?' après abattement 10 %':''}`, eur(r.ir))}
+    ${li(`Charges patronales (${pct(r.p*100)})`, eur(r.chPat))}
+    ${li('Coût total employeur (déductible de l\u2019IS)', eur(r.cost))}
+    ${li("Économie d'IS générée par la charge", '− ' + eur(r.C_isSave))}
+    ${li('Sortie de trésorerie nette', eur(r.C.cash))}
+    ${li('CA HT à facturer', eur(r.C.fact), 'r')}
+  </ul></details>`;
+}
+
+document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
