@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Achat perso ou via la SASU — calculateur</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232F5BEA'/%3E%3Crect x='6' y='6.5' width='9' height='5' rx='1.5' fill='%2385E0B5'/%3E%3Crect x='6' y='13.5' width='15' height='5' rx='1.5' fill='%23fff'/%3E%3Crect x='6' y='20.5' width='20' height='5' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,6 +54,12 @@ input:focus-visible,select:focus-visible,summary:focus-visible,button:focus-visi
 .bar{display:flex;height:34px;border-radius:6px;overflow:hidden;background:var(--line)}
 .bar span{display:block;height:100%;transition:width .35s ease}
 @media (prefers-reduced-motion: reduce){.bar span{transition:none}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0 0 16px;background:var(--panel)}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:6px 14px;font-size:14px;cursor:pointer;color:var(--muted)}
+.seg input:checked+span{background:var(--co);color:var(--panel);font-weight:600}
+.seg input:focus-visible+span{outline:2px solid var(--co);outline-offset:-2px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin:4px 0 22px}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:26px}
@@ -67,6 +74,7 @@ th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
 thead th{font-weight:600;color:var(--muted)}
 tr.sum td{font-weight:700}
+tr.aside td{color:var(--muted);font-size:13px;border-bottom:0}
 details{border-top:1px solid var(--line);padding:10px 0}
 details:first-of-type{border-top:0}
 summary{cursor:pointer;font-weight:600}
@@ -117,16 +125,24 @@ summary{cursor:pointer;font-weight:600}
 
 <main>
   <h1>Ce que coûte vraiment un achat, selon qui paie</h1>
-  <p class="lede">Même objet, trois façons de le payer : via la société en frais, ou personnellement avec de l'argent sorti en dividendes ou en salaire. La comparaison se fait en chiffre d'affaires à facturer pour financer l'achat, à trésorerie de la société inchangée.</p>
+  <p class="lede">Même objet, trois façons de le payer : via la société en frais, ou personnellement avec de l'argent sorti en dividendes ou en salaire. On les compare de deux façons : le chiffre d'affaires à facturer pour financer l'achat sans entamer la trésorerie de la société, ou ce que l'achat coûte réellement à cette trésorerie une fois l'IS payé.</p>
 
   <p class="verdict" id="verdict"></p>
 
-  <label class="c"><input id="withIS" type="checkbox" checked> Inclure l'IS dans le graphique</label>
+  <div class="seg" role="radiogroup" aria-label="Unité du graphique">
+    <label><input type="radio" name="unit" value="fact" checked><span>CA à facturer</span></label>
+    <label><input type="radio" name="unit" value="cash"><span>Coût après IS</span></label>
+  </div>
 
   <div class="routes" id="routes"></div>
   <div class="legend" id="legend"></div>
 
   <div class="grid" id="metrics"></div>
+
+  <section class="card">
+    <h2>Ce qui se passe dans la trésorerie de la société</h2>
+    <div class="tablewrap"><table id="treso"></table></div>
+  </section>
 
   <section class="card">
     <h2>Tableau comparatif</h2>
@@ -222,31 +238,44 @@ function compute(){
 
 const COLORS = {obj:['var(--co)','Objet HT'], tvaP:['var(--tvac)','TVA payée (non récupérée)'],
   pfu:['var(--tax)','Flat tax'], is:['var(--soc)','IS sur le bénéfice distribué'],
-  ir:['var(--ir)','Impôt sur le revenu'], sal:['var(--sal)','Charges salariales'], pat:['var(--pat)','Charges patronales']};
+  ir:['var(--ir)','Impôt sur le revenu'], sal:['var(--sal)','Charges salariales'], pat:['var(--pat)','Charges patronales'],
+  isSave:['repeating-linear-gradient(45deg,var(--good) 0 3px,transparent 3px 7px)',"Économie d'IS"]};
+
+// Vue « coût après IS » : chaque barre = sortie de trésorerie nette d'IS, suivie de l'économie d'IS en hachuré.
+// Les postes pleins sont réduits au prorata pour sommer au net ; les infobulles gardent les montants réels.
+function cashRoute(x, saving, note){
+  const seg = x.seg.filter(sg => sg.k !== 'is');
+  const gross = seg.reduce((a,sg) => a + sg.v, 0);
+  const f = gross > 0 ? (gross - saving) / gross : 1;
+  return {...x, tot:x.cash, len:gross,
+    seg:[...seg.map(sg => ({...sg, w:sg.v*f})), ...(saving > 0 ? [{k:'isSave', v:saving, w:saving, note}] : [])]};
+}
 
 function render(){
   const r = compute();
-  const withIS = $('withIS').checked;
-  // sans IS : on retire le segment IS de chaque barre et on ajuste le total
-  const routes = [r.A, r.B, r.C].map(x => withIS ? x : {...x,
-    fact: x.fact - x.seg.filter(sg => sg.k === 'is').reduce((a,sg) => a + sg.v, 0),
-    seg: x.seg.filter(sg => sg.k !== 'is')});
-  const max = Math.max(...routes.map(x=>x.fact), 1);
+  const cash = document.querySelector('input[name=unit]:checked').value === 'cash';
+  const spread = r.amortized ? `, étalée sur ${r.n} ans` : '';
+  const routes = cash
+    ? [cashRoute(r.A, r.isSaveTot, spread), cashRoute(r.B, 0), cashRoute(r.C, r.C_isSave)]
+    : [r.A, r.B, r.C].map(x => ({...x, tot:x.fact, len:x.fact, seg:x.seg.map(sg => ({...sg, w:sg.v}))}));
+  const max = Math.max(...routes.map(x=>x.len), 1);
 
   $('routes').innerHTML = routes.map((x,i) => {
     const segs = x.seg.map(sg => {
       const key = sg.k;
-      return `<span title="${COLORS[key][1]} : ${eur(sg.v)}" style="width:${(sg.v/max*100).toFixed(2)}%;background:${COLORS[key][0]}"></span>`;
+      return `<span title="${COLORS[key][1]} : ${eur(sg.v)}${sg.note||''}" style="width:${(sg.w/max*100).toFixed(2)}%;background:${COLORS[key][0]}"></span>`;
     }).join('');
-    return `<div class="route"><div class="top"><span class="name">${x.name}</span><span class="tot">${eur(x.fact)}</span></div>
-      <div class="bar" role="img" aria-label="${x.name} : ${eur(x.fact)} à facturer">${segs}</div></div>`;
+    return `<div class="route"><div class="top"><span class="name">${x.name}</span><span class="tot">${eur(x.tot)}</span></div>
+      <div class="bar" role="img" aria-label="${x.name} : ${eur(x.tot)} ${cash ? 'de trésorerie après IS' : 'à facturer'}">${segs}</div></div>`;
   }).join('');
 
-  $('legend').innerHTML = ['obj','tvaP','pfu','is','ir','sal','pat'].filter(k => withIS || k !== 'is').map(k =>
+  $('legend').innerHTML = (cash ? ['obj','tvaP','pfu','ir','sal','pat','isSave'] : ['obj','tvaP','pfu','is','ir','sal','pat']).map(k =>
     `<span><i style="background:${COLORS[k][0]}"></i>${COLORS[k][1]}</span>`).join('');
 
   const saveB = r.B.fact - r.A.fact, saveC = r.C.fact - r.A.fact;
-  $('verdict').innerHTML = `Pour un objet à <b>${eur(r.ttc)}</b> TTC, il faut facturer <b>${eur(routes[0].fact)}</b> HT s'il est payé par la société, contre <b>${eur(routes[1].fact)}</b> via dividendes et <b>${eur(routes[2].fact)}</b> via salaire${withIS ? '' : ' (hors IS)'}.`;
+  $('verdict').innerHTML = cash
+    ? `Pour un objet à <b>${eur(r.ttc)}</b> TTC, la trésorerie de la société baisse de <b>${eur(routes[0].tot)}</b> après IS s'il est payé par la société${r.amortized && r.isSaveTot > 0 ? ` (économie d'IS étalée sur ${r.n} ans)` : ''}, contre <b>${eur(routes[1].tot)}</b> via dividendes et <b>${eur(routes[2].tot)}</b> via salaire.`
+    : `Pour un objet à <b>${eur(r.ttc)}</b> TTC, il faut facturer <b>${eur(r.A.fact)}</b> HT s'il est payé par la société, contre <b>${eur(r.B.fact)}</b> via dividendes et <b>${eur(r.C.fact)}</b> via salaire.`;
 
   const metrics = [
     [eur(r.A.cash), 'Coût net pour la trésorerie de la société', ''],
@@ -260,6 +289,29 @@ function render(){
     [r.tmIS + ' %', `Taux marginal d'IS (bénéfice avant achat ${eur(r.P0)})`, ''],
   ];
   $('metrics').innerHTML = metrics.map(([v,k,c]) => `<div class="m"><div class="v ${c}">${v}</div><div class="k">${k}</div></div>`).join('');
+
+  // Trésorerie sur l'exercice : départ = bénéfice avant IS, déduction de l'année 1 seulement si amorti
+  const pme = $('pme').checked;
+  const cols = [
+    {P:r.P0, out:0, tva:0},
+    {P:r.P0 - r.d1, out:r.ttc, tva:r.tvaRec, later:r.isSaveTot - r.isSave1, perso:null},
+    {P:r.P0, out:r.G, tva:0, perso:r.pfuAmt},
+    {P:r.P0 - r.cost, out:r.cost, tva:0, perso:r.ir + r.chSal},
+  ];
+  cols.forEach(c => { c.is = IS(c.P, pme); c.left = r.P0 - c.is - c.out + c.tva; });
+  cols.forEach((c,i) => { if (i) c.real = cols[0].left - c.left - (c.later || 0); });
+  const row = (label, f, cls='') => `<tr class="${cls}"><td>${label}</td>${cols.map((c,i) => `<td>${f(c,i)}</td>`).join('')}</tr>`;
+  const dash = '—';
+  $('treso').innerHTML = `<thead><tr><th></th><th>Rien acheté</th><th>Société</th><th>Dividendes</th><th>Salaire</th></tr></thead><tbody>
+    ${row('Bénéfice avant IS', c => eur(c.P))}
+    ${row('IS', c => eur(c.is))}
+    ${row('Sortie (achat TTC / dividende brut / coût employeur)', c => eur(c.out))}
+    ${row('TVA récupérée', c => c.tva ? '+ ' + eur(c.tva) : eur(0))}
+    ${row("Trésorerie restante sur l'exercice", c => eur(c.left), 'sum')}
+    ${r.amortized && cols[1].later > 0 ? row(`Économie d'IS des années suivantes (amortissement sur ${r.n} ans)`, (c,i) => i === 1 ? '+ ' + eur(c.later) : dash) : ''}
+    ${row('Coût réel', (c,i) => i ? eur(c.real) : dash, 'sum')}
+    ${row('Dont prélevé côté perso (flat tax / IR + charges salariales)', (c,i) => i > 1 ? eur(c.perso) : dash, 'aside')}
+  </tbody>`;
 
   $('tbl').innerHTML = `<thead><tr><th></th><th>Société</th><th>Dividendes</th><th>Salaire</th></tr></thead><tbody>
     <tr><td>Ce que vous recevez</td><td>l'objet</td><td>l'objet</td><td>l'objet</td></tr>
